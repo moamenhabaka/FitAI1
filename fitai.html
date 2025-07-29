@@ -1,0 +1,169 @@
+<!-- FitAI - Smart Health App with Google Login (Firebase Auth) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitAI – Smart Health App</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <style>
+    :root {
+      --bg-color: #E6F5FF;
+      --btn-color: #007BFF;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      margin: 0;
+      padding: 0;
+    }
+    .nav {
+      display: flex;
+      justify-content: space-around;
+      background: #333;
+      color: white;
+      padding: 10px;
+    }
+    .nav button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .page {
+      display: none;
+      max-width: 480px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    .page.active {
+      display: block;
+    }
+    button.action {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--btn-color);
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="nav">
+  <button onclick="showPage('homePage')">Home</button>
+  <button onclick="showPage('foodPage')">Food</button>
+  <button onclick="showPage('exercisePage')">Exercise</button>
+  <button onclick="showPage('progressPage')">Progress</button>
+  <button onclick="logoutUser()">Logout</button>
+</div>
+
+<div id="loginPage" class="page active">
+  <h2>🔐 Sign in with Google</h2>
+  <button class="action" onclick="loginWithGoogle()">Sign in with Google</button>
+</div>
+
+<div id="homePage" class="page">
+  <h2>🏠 Welcome</h2>
+  <p>Hello <span id="userName"></span>, use the top menu to navigate.</p>
+</div>
+
+<div id="foodPage" class="page">
+  <h2>🍱 Food Plan</h2>
+  <p>Eat healthy meals based on your goals (AI coming soon!)</p>
+</div>
+
+<div id="exercisePage" class="page">
+  <h2>🏋️ Workout Plan</h2>
+  <ul>
+    <li>Day 1: Full Body Training</li>
+    <li>Day 2: Cardio 30 min + Core</li>
+    <li>Day 3: Rest or Light Yoga</li>
+    <li>Day 4: Upper Body</li>
+    <li>Day 5: Lower Body</li>
+  </ul>
+</div>
+
+<div id="progressPage" class="page">
+  <h2>📈 Progress Tracker</h2>
+  <label>Enter current weight (kg):</label>
+  <input type="number" id="progressWeight">
+  <button class="action" onclick="logWeight()">Log Weight</button>
+  <div id="progressLog"></div>
+</div>
+
+<script>
+  // Firebase config (replace with your own)
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    appId: "YOUR_APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  const auth = firebase.auth();
+
+  function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+  }
+
+  function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+      .then(result => {
+        const user = result.user;
+        document.getElementById('userName').textContent = user.displayName;
+        showPage('homePage');
+        renderProgress();
+      })
+      .catch(error => alert(error.message));
+  }
+
+  function logoutUser() {
+    auth.signOut().then(() => {
+      showPage('loginPage');
+    });
+  }
+
+  function logWeight() {
+    const weight = document.getElementById('progressWeight').value;
+    const date = new Date().toISOString().split('T')[0];
+    let history = JSON.parse(localStorage.getItem('weightHistory') || '[]');
+    history.push({ date, weight });
+    localStorage.setItem('weightHistory', JSON.stringify(history));
+    renderProgress();
+  }
+
+  function renderProgress() {
+    const log = document.getElementById('progressLog');
+    const history = JSON.parse(localStorage.getItem('weightHistory') || '[]');
+    log.innerHTML = '<h4>Your Progress:</h4>';
+    history.slice().reverse().forEach(h => {
+      log.innerHTML += `<div>${h.date}: ${h.weight} kg</div>`;
+    });
+  }
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      document.getElementById('userName').textContent = user.displayName;
+      showPage('homePage');
+      renderProgress();
+    } else {
+      showPage('loginPage');
+    }
+  });
+</script>
+</body>
+</html>
